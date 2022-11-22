@@ -8,19 +8,15 @@
 #include <string>
 
 namespace vnx {
-constexpr size_t stat_tx_status = 0x0200;
-constexpr size_t stat_rx_status = 0x0204;
-
-struct stats_t {
-  std::map<std::string, std::uint32_t> tx;
-  std::map<std::string, std::uint32_t> rx;
-  std::uint32_t cycle_count;
-};
+constexpr char stat_tx_status_name[] = "stat_tx_status";
+constexpr char stat_rx_status_name[] = "stat_rx_status";
+  
+typedef std::map<std::string, std::uint32_t> stats_t;
 
 class CMAC {
 public:
-  CMAC(xrt::ip &cmac);
-  CMAC(xrt::ip &&cmac);
+  CMAC(xrt::xclbin::ip &xclbin_ip, xrt::ip &cmac);
+  CMAC(xrt::xclbin::ip &&xclbin_ip, xrt::ip &&cmac);
 
   /**
    * Retrieves the link status from the CMAC kernel.
@@ -43,5 +39,12 @@ public:
 
 private:
   xrt::ip cmac;
+
+  size_t stat_tx_status_address;
+  size_t stat_rx_status_address;
+  std::map<std::string, size_t> stat_debug_address_map;
+
+  void fetch_register_offsets(xrt::xclbin::ip &xclbin_ip);
+
 };
 } // namespace vnx

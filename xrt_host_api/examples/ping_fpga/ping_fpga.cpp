@@ -119,6 +119,7 @@ int main(int argc, char *argv[]) {
 
   const xclbin_path xclbin = parse_xclbin(platform, args[0]);
   auto xclbin_uuid = device.load_xclbin(xclbin.path);
+  auto xclbin_meta = xrt::xclbin(xclbin.path);
   std::cout << "Loaded " << xclbin.path << " onto FPGA on " << hostname << std::endl;
   // Give time for xclbin to be loaded completely before attempting to read
   // the link status.
@@ -126,9 +127,10 @@ int main(int argc, char *argv[]) {
 
   // Loop over compute units in xclbin
   for (const auto &cus : kernels.at(xclbin.type)) {
-    auto cmac = vnx::CMAC(xrt::ip(device, xclbin_uuid,
-                                  std::string(cus.first) + ":{" +
-                                      std::string(cus.first) + "}"));
+    std::string cu_name = std::string(cus.first) + ":{" +
+                                      std::string(cus.first) + "}"; 
+    auto cmac = vnx::CMAC(device, xclbin_uuid, xclbin_meta,
+                                  cu_name);
     auto networklayer = vnx::Networklayer(
         xrt::ip(device, xclbin_uuid,
                 "networklayer:{" + std::string(cus.second) + "}"));

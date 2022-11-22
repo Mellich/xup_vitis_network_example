@@ -7,15 +7,20 @@
 #include <string>
 
 namespace vnx {
-CMAC::CMAC(xrt::ip &cmac) : cmac(cmac) {}
-CMAC::CMAC(xrt::ip &&cmac) : cmac(cmac) {}
+CMAC::CMAC(xrt::xclbin::ip &xclbin_ip, xrt::ip &cmac) : cmac(cmac) {
+  fetch_register_offsets(xclbin_ip);
+}
+
+CMAC::CMAC(xrt::xclbin::ip &&xclbin_ip, xrt::ip &&cmac) : cmac(cmac) {
+  fetch_register_offsets(xclbin_ip);
+}
 
 std::map<std::string, bool> CMAC::link_status() {
   std::map<std::string, bool> status_dict;
 
-  uint32_t l_rxStatus = cmac.read_register(stat_rx_status);
+  uint32_t l_rxStatus = cmac.read_register(stat_rx_status_address);
   std::bitset<32> l_rxBits(l_rxStatus);
-  uint32_t l_txStatus = cmac.read_register(stat_tx_status);
+  uint32_t l_txStatus = cmac.read_register(stat_tx_status_address);
   std::bitset<32> l_txBits(l_txStatus);
   status_dict.insert({"rx_status", l_rxBits.test(0)});
   status_dict.insert({"rx_aligned", l_rxBits.test(1)});
@@ -29,11 +34,28 @@ std::map<std::string, bool> CMAC::link_status() {
   return status_dict;
 }
 
+void CMAC::fetch_register_offsets(xrt::xclbin::ip &xclbin_ip) {
+    for (auto arg : xclbin_ip.get_args()) {
+      // Fetch address offset for relevant registers here
+      if (arg.get_name() == stat_tx_status_name) {
+        stat_tx_status_address = arg.get_offset();
+      }
+      if (arg.get_name() == stat_rx_status_name) {
+        stat_rx_status_address = arg.get_offset();
+      }
+      // Put all register addresses in debug list to print them in the statistics
+      stat_debug_address_map.insert({arg.get_name(), arg.get_offset()});
+    }
+}
+
 stats_t CMAC::statistics() {
-  stats_t stats{};
+  stats_t s;
+  // Read the value for all debug registers
+  // and put them in a map
+  for (auto &stat: stat_debug_address_map) {
+    s.insert({stat.first, cmac.read_register(stat.second)});
+  }
 
-  // TODO: implement function
-
-  return stats;
+  return s;
 }
 } // namespace vnx

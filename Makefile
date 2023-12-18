@@ -36,11 +36,11 @@ UDP_MY_PORT_OFFSET = $(shell printf "0x%04X\n" $$(($(UDP_THEIR_PORT_OFFSET) + 8*
 UDP_VALID_OFFSET = $(shell printf "0x%04X\n" $$(($(UDP_MY_PORT_OFFSET) + 8*$(MAX_SOCKETS))))
 
 XSA := $(strip $(patsubst %.xpfm, % , $(shell basename $(DEVICE))))
-TEMP_DIR := _x.$(XSA)
+TEMP_DIR := _x.sockets$(MAX_SOCKETS).$(XSA)
 VPP := $(XILINX_VITIS)/bin/v++
 CLFLAGS += -t hw --platform $(DEVICE) --save-temps
 
-BUILD_DIR := ./$(DESIGN).intf$(INTERFACE).$(XSA)
+BUILD_DIR := ./$(DESIGN).intf$(INTERFACE).sockets$(MAX_SOCKETS).$(XSA)
 BINARY_CONTAINERS = $(BUILD_DIR)/${XCLBIN_NAME}.xclbin
 
 NETLAYERDIR = NetLayers/
@@ -115,13 +115,13 @@ $(BUILD_DIR)/${XCLBIN_NAME}.xclbin: $(LIST_XO)
 	$(VPP) $(CLFLAGS) $(CONFIGFLAGS) --temp_dir $(BUILD_DIR) -l -o'$@' $^ $(LIST_REPOS) -j 8
 
 $(BASICDIR)$(TEMP_DIR)/%.xo: $(BASICDIR)src/*.cpp
-	make -C $(BASICDIR) all DEVICE=$(DEVICE) -j3
+	make -C $(BASICDIR) all DEVICE=$(DEVICE) TEMP_DIR=$(TEMP_DIR) -j3
 
 $(BENCHMARDIR)$(TEMP_DIR)/%.xo: $(BENCHMARDIR)src/*
-	make -C $(BENCHMARDIR) all DEVICE=$(DEVICE) -j3
+	make -C $(BENCHMARDIR) all DEVICE=$(DEVICE) TEMP_DIR=$(TEMP_DIR) -j3
 
 $(CMACDIR)$(TEMP_DIR)/%.xo:
-	make -C $(CMACDIR) all DEVICE=$(DEVICE) INTERFACE=$(INTERFACE)
+	make -C $(CMACDIR) all DEVICE=$(DEVICE) INTERFACE=$(INTERFACE) TEMP_DIR=$(TEMP_DIR)
 
 $(NETLAYERDIR)$(TEMP_DIR)/%.xo:
 	cd ./$(NETLAYERDIR)$(NETLAYERHLS) && git checkout -- .
@@ -130,7 +130,7 @@ $(NETLAYERDIR)$(TEMP_DIR)/%.xo:
 	cat ./$(NETLAYERDIR)/template.xml | sed 's/UDP_TP_PLACEHOLDER/$(UDP_THEIR_PORT_OFFSET)/' \
 	                                  | sed 's/UDP_MP_PLACEHOLDER/$(UDP_MY_PORT_OFFSET)/' \
 	                                  | sed 's/UDP_VL_PLACEHOLDER/$(UDP_VALID_OFFSET)/' > ./$(NETLAYERDIR)/kernel.xml
-	make -C $(NETLAYERDIR) all DEVICE=$(DEVICE)
+	make -C $(NETLAYERDIR) all DEVICE=$(DEVICE) TEMP_DIR=$(TEMP_DIR)
 
 check-devices:
 ifndef DEVICE

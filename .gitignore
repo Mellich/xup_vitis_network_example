@@ -11,3 +11,6 @@ basic.*/
 benchmark.*/
 __pycache__/
 *.jstack
+*.out
+*.xml
+.vscode

@@ -23,7 +23,7 @@ if (jsoncpp_FOUND)
   target_include_directories(vnx PRIVATE ${JSON_INC_PATH})
 else (jsoncpp_FOUND)
   message(WARNING "jsoncpp not found on the system, compiling vnx without mac address utilities.")
-  add_library(vnx OBJECT src/cmac.cpp src/networklayer.cpp)
+  add_library(vnx OBJECT ${CMAKE_CURRENT_LIST_DIR}/src/cmac.cpp ${CMAKE_CURRENT_LIST_DIR}/src/networklayer.cpp)
 endif (jsoncpp_FOUND)
 
 target_include_directories(vnx PUBLIC ${VNX_INCLUDE_PATH})

@@ -10,6 +10,7 @@
 #include <future>
 
 const size_t data_size = 2147483648;
+const unsigned int timeout_ms = 5000;
 
 bool setup_nw(int index, vnx::Networklayer network_layer, vnx::CMAC cmac)
 {
@@ -44,10 +45,10 @@ bool setup_nw(int index, vnx::Networklayer network_layer, vnx::CMAC cmac)
     return true;
 }
 
-int run_test(std::string bfd)
+unsigned long run_test(std::string bfd, std::string bitstream)
 {
     xrt::device dev(bfd);
-    auto uuid = dev.load_xclbin("../../basic.intf3.xilinx_u280_gen3x16_xdma_1_202211_1/vnx_basic_if3.xclbin");
+    auto uuid = dev.load_xclbin(bitstream);
     vnx::Networklayer network_layer(xrt::ip(dev, uuid, "networklayer:{networklayer_0}"));
     vnx::CMAC cmac(xrt::ip(dev, uuid, "cmac_0"));
     vnx::Networklayer network_layer2(xrt::ip(dev, uuid, "networklayer:{networklayer_1}"));
@@ -55,26 +56,26 @@ int run_test(std::string bfd)
 
     bool nw1_up = false;
     bool nw2_up = false;
-    while (!(nw1_up && nw2_up))
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::future<bool> c1, c2;
+    if (!nw1_up)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        std::future<bool> c1, c2;
-        if (!nw1_up)
-        {
-            c1 = std::async(std::launch::async, setup_nw, 0, network_layer, cmac);
-        }
-        if (!nw2_up)
-        {
-            c2 = std::async(std::launch::async, setup_nw, 1, network_layer2, cmac2);
-        }
-        if (!nw1_up)
-        {
-            nw1_up = c1.get();
-        }
-        if (!nw2_up)
-        {
-            nw2_up = c2.get();
-        }
+        c1 = std::async(std::launch::async, setup_nw, 0, network_layer, cmac);
+    }
+    if (!nw2_up)
+    {
+        c2 = std::async(std::launch::async, setup_nw, 1, network_layer2, cmac2);
+    }
+    if (!nw1_up)
+    {
+        nw1_up = c1.get();
+    }
+    if (!nw2_up)
+    {
+        nw2_up = c2.get();
+    }
+    if (!nw1_up || !nw2_up) {
+        return 1;
     }
     std::cout << "Finishing ARP discovery..." << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -82,8 +83,8 @@ int run_test(std::string bfd)
     network_layer2.arp_discovery();
     std::cout << "ARP discovery finished!" << std::endl;
 
-    long abserror = 0;
-    for (int rep = 0; rep < 10; rep++)
+    unsigned long abserror = 0;
+    for (int rep = 0; rep < 3; rep++)
     {
         std::cout << "Start repetition " << rep << std::endl
                   << std::endl;
@@ -122,7 +123,7 @@ int run_test(std::string bfd)
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         auto t1 = std::chrono::high_resolution_clock::now();
         xrt::run r3 = mm2s(bo_in, 0, data_size, 0);
-        r.wait(std::chrono::seconds(5));
+        r.wait(std::chrono::milliseconds(timeout_ms));
         r3.wait();
         auto t2 = std::chrono::high_resolution_clock::now();
         double ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
@@ -142,11 +143,11 @@ int run_test(std::string bfd)
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         t1 = std::chrono::high_resolution_clock::now();
         xrt::run r4 = mm2s2(bo_in2, 0, data_size, 0);
-        r2.wait(std::chrono::seconds(5));
+        r2.wait(std::chrono::milliseconds(timeout_ms));
         r4.wait();
         t2 = std::chrono::high_resolution_clock::now();
-        ms = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-        std::cout << "1 -> 0: " << ms << "ms, " << (data_size / (ms) * 1.0e-6) << "GB/s" << std::endl;
+        double ms2 = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        std::cout << "1 -> 0: " << ms2 << "ms, " << (data_size / (ms2) * 1.0e-6) << "GB/s" << std::endl;
 
         network_layer.get_udp_in_pkts();
         network_layer.get_udp_app_in_pkts();
@@ -157,6 +158,11 @@ int run_test(std::string bfd)
         network_layer2.get_udp_app_in_pkts();
         network_layer2.get_udp_app_out_pkts();
         network_layer2.get_udp_out_pkts();
+
+        if (ms > timeout_ms || ms2 > timeout_ms) {
+            std::cout << "At least one direction had a timeout. Skip validation" << std::endl;
+            return 2;
+        }
 
         bo_out.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
         bo_out2.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
@@ -180,9 +186,25 @@ int run_test(std::string bfd)
     return abserror;
 }
 
-int main()
+int main(int argc, char **argv)
 {
-    long abserror = run_test("0000:01:00.1") + run_test("0000:81:00.1") + run_test("0000:a1:00.1");
+    if (argc < 2) {
+        std::cerr << "Please give path to bitstream as argument" << std::endl;
+        return 1;
+    }
+    std::string bitstream(argv[1]);
+    std::vector<std::string> bfds = {"0000:01:00.1", "0000:81:00.1", "0000:a1:00.1"};
+    std::vector<std::string> failed_devices;
+    long abserror = 0;
+    for (std::string& bfd : bfds) {
+        std::cout << "Start testing device " << bfd << std::endl;
+        int error = run_test(bfd, bitstream); 
+        abserror += error;
+        if (error != 0) {
+            std::cout << "FAILED FOR DEVICE " << bfd << std::endl;
+            failed_devices.push_back(bfd);
+        }
+    }
     if (abserror == 0)
     {
         std::cout << "SUCCESS!" << std::endl;
@@ -190,6 +212,10 @@ int main()
     else
     {
         std::cout << "FAILED! ERRORS: " << abserror << std::endl;
+        std::cout << "Failed devices:" << std::endl;
+        for (std::string& bfd : failed_devices) {
+            std::cout << bfd << std::endl;
+        }
     }
     return abserror != 0;
 }

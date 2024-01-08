@@ -12,17 +12,17 @@
 const size_t data_size = 2147483648;
 const unsigned int timeout_ms = 5000;
 
-bool setup_nw(int index, vnx::Networklayer network_layer, vnx::CMAC cmac)
+bool setup_nw(int index, int offset, vnx::Networklayer network_layer, vnx::CMAC cmac)
 {
     auto link_status = cmac.link_status();
     link_status = cmac.link_status();
     if (link_status.at("rx_status"))
     {
-        std::cout << "Link successful!" << std::endl;
+        std::cout << "Link successful for " << index << std::endl;
     }
     else
     {
-        std::cout << "No link found." << std::endl;
+        std::cout << "No link found for " << index << std::endl;
     }
 
     if (!link_status.at("rx_status"))
@@ -32,9 +32,9 @@ bool setup_nw(int index, vnx::Networklayer network_layer, vnx::CMAC cmac)
 
     std::cout << "Populating socket table..." << std::endl;
 
-    network_layer.update_ip_address("192.168.0." + std::to_string(index));
+    network_layer.update_ip_address("192.168.0." + std::to_string(offset + index));
 
-    network_layer.configure_socket(0, "192.168.0." + std::to_string((index + 1) % 2), 5000,
+    network_layer.configure_socket(0, "192.168.0." + std::to_string(offset + ((index + 1) % 2)), 5000,
                                    5000, true);
 
     network_layer.populate_socket_table();
@@ -45,7 +45,7 @@ bool setup_nw(int index, vnx::Networklayer network_layer, vnx::CMAC cmac)
     return true;
 }
 
-unsigned long run_test(std::string bfd, std::string bitstream)
+unsigned long run_test(std::string bfd, std::string bitstream, int offset)
 {
     xrt::device dev(bfd);
     auto uuid = dev.load_xclbin(bitstream);
@@ -60,11 +60,11 @@ unsigned long run_test(std::string bfd, std::string bitstream)
     std::future<bool> c1, c2;
     if (!nw1_up)
     {
-        c1 = std::async(std::launch::async, setup_nw, 0, network_layer, cmac);
+        c1 = std::async(std::launch::async, setup_nw, 0, offset, network_layer, cmac);
     }
     if (!nw2_up)
     {
-        c2 = std::async(std::launch::async, setup_nw, 1, network_layer2, cmac2);
+        c2 = std::async(std::launch::async, setup_nw, 1, offset, network_layer2, cmac2);
     }
     if (!nw1_up)
     {
@@ -196,14 +196,16 @@ int main(int argc, char **argv)
     std::vector<std::string> bfds = {"0000:01:00.1", "0000:81:00.1", "0000:a1:00.1"};
     std::vector<std::string> failed_devices;
     long abserror = 0;
+    int offset = 0;
     for (std::string& bfd : bfds) {
         std::cout << "Start testing device " << bfd << std::endl;
-        int error = run_test(bfd, bitstream); 
+        int error = run_test(bfd, bitstream, offset); 
         abserror += error;
         if (error != 0) {
             std::cout << "FAILED FOR DEVICE " << bfd << std::endl;
             failed_devices.push_back(bfd);
         }
+        offset += 2;
     }
     if (abserror == 0)
     {

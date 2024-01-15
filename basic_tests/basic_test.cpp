@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <future>
 
-const size_t data_size = 2147483648;
 const unsigned int timeout_ms = 5000;
 
 bool setup_nw(int index, int offset, vnx::Networklayer network_layer, vnx::CMAC cmac)
@@ -45,7 +44,7 @@ bool setup_nw(int index, int offset, vnx::Networklayer network_layer, vnx::CMAC 
     return true;
 }
 
-unsigned long run_test(std::string bfd, std::string bitstream, int offset)
+unsigned long run_test(std::string bfd, std::string bitstream, int offset, long data_size, int repetitions)
 {
     xrt::device dev(bfd);
     auto uuid = dev.load_xclbin(bitstream);
@@ -84,7 +83,7 @@ unsigned long run_test(std::string bfd, std::string bitstream, int offset)
     std::cout << "ARP discovery finished!" << std::endl;
 
     unsigned long abserror = 0;
-    for (int rep = 0; rep < 3; rep++)
+    for (int rep = 0; rep < repetitions; rep++)
     {
         std::cout << "Start repetition " << rep << std::endl
                   << std::endl;
@@ -188,18 +187,20 @@ unsigned long run_test(std::string bfd, std::string bitstream, int offset)
 
 int main(int argc, char **argv)
 {
-    if (argc < 2) {
-        std::cerr << "Please give path to bitstream as argument" << std::endl;
+    if (argc < 4) {
+        std::cerr << "Requires exactly two input arguments: Execute with " << argv[0] << " PATH_TO_BITSTREAM.xclbin DATA_SIZE_BYTES #REPETITIONS"  << std::endl;
         return 1;
     }
     std::string bitstream(argv[1]);
+    long data_size = std::stol(argv[2]);
+    int repetitions = std::stoi(argv[3]);
     std::vector<std::string> bfds = {"0000:01:00.1", "0000:81:00.1", "0000:a1:00.1"};
     std::vector<std::string> failed_devices;
     long abserror = 0;
     int offset = 0;
     for (std::string& bfd : bfds) {
         std::cout << "Start testing device " << bfd << std::endl;
-        int error = run_test(bfd, bitstream, offset); 
+        int error = run_test(bfd, bitstream, offset, data_size, repetitions); 
         abserror += error;
         if (error != 0) {
             std::cout << "FAILED FOR DEVICE " << bfd << std::endl;

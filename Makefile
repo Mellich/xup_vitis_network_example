@@ -47,6 +47,7 @@ NETLAYERDIR = NetLayers/
 CMACDIR     = Ethernet/
 BASICDIR    = Basic_kernels/
 BENCHMARDIR = Benchmark_kernel/
+LATDIR		= LatencyKernels/
 
 NETLAYERHLS = 100G-fpga-network-stack-core
 
@@ -76,8 +77,8 @@ ifeq (benchmark,$(DESIGN))
 	LIST_XO += $(BENCHMARDIR)$(TEMP_DIR)/switch_wrapper.xo
 	LIST_REPOS += --user_ip_repo_paths $(SWITCH_IP_FOLDER)
 else ifeq (latency,$(DESIGN))
-	LIST_XO += $(BASICDIR)$(TEMP_DIR)/issue.xo
-	LIST_XO += $(BASICDIR)$(TEMP_DIR)/dump.xo
+	LIST_XO += $(LATDIR)$(TEMP_DIR)/issue.xo
+	LIST_XO += $(LATDIR)$(TEMP_DIR)/dump.xo
 else
 	LIST_XO += $(BASICDIR)$(TEMP_DIR)/krnl_mm2s.xo
 	LIST_XO += $(BASICDIR)$(TEMP_DIR)/krnl_s2mm.xo
@@ -119,6 +120,9 @@ $(BUILD_DIR)/${XCLBIN_NAME}.xclbin: $(LIST_XO)
 
 $(BASICDIR)$(TEMP_DIR)/%.xo: $(BASICDIR)src/*.cpp
 	make -C $(BASICDIR) all DEVICE=$(DEVICE) TEMP_DIR=$(TEMP_DIR) -j3
+
+$(LATDIR)$(TEMP_DIR)/%.xo: $(LATDIR)src/*.cpp
+	make -C $(LATDIR) all DEVICE=$(DEVICE) TEMP_DIR=$(TEMP_DIR) -j3
 
 $(BENCHMARDIR)$(TEMP_DIR)/%.xo: $(BENCHMARDIR)src/*
 	make -C $(BENCHMARDIR) all DEVICE=$(DEVICE) TEMP_DIR=$(TEMP_DIR) -j3

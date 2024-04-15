@@ -11,9 +11,11 @@
 #SBATCH --cpus-per-task=4
 
 module reset
-module load fpga xilinx/xrt/2.14 devel CMake changeFPGAlinks
+module load fpga xilinx/xrt/2.14 devel CMake changeFPGAlinks toolchain gompi
 
 cd build
+
+make
 
 xbutil reset -d 0000:01:00.1 --force
 xbutil reset -d 0000:81:00.1 --force

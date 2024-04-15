@@ -10,12 +10,14 @@
 #SBATCH --tasks-per-node=3
 #SBATCH --mem=32g
 #SBATCH --cpus-per-task=4
-#SBATCH -x n2fpga03
+#SBATCH -x n2fpga03,n2fpga06
 
 module reset
 module load fpga xilinx/xrt/2.14 devel CMake changeFPGAlinks toolchain gompi
 
-cd build_scale
+cd build
+
+make scale
 
 srun -n 3 --spread-job xbutil reset -d 0000:01:00.1 --force
 srun -n 3 --spread-job xbutil reset -d 0000:81:00.1 --force

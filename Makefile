@@ -75,6 +75,9 @@ ifeq (benchmark,$(DESIGN))
 	LIST_XO += $(BENCHMARDIR)$(TEMP_DIR)/collector.xo
 	LIST_XO += $(BENCHMARDIR)$(TEMP_DIR)/switch_wrapper.xo
 	LIST_REPOS += --user_ip_repo_paths $(SWITCH_IP_FOLDER)
+else ifeq (latency,$(DESIGN))
+	LIST_XO += $(BASICDIR)$(TEMP_DIR)/issue.xo
+	LIST_XO += $(BASICDIR)$(TEMP_DIR)/dump.xo
 else
 	LIST_XO += $(BASICDIR)$(TEMP_DIR)/krnl_mm2s.xo
 	LIST_XO += $(BASICDIR)$(TEMP_DIR)/krnl_s2mm.xo
@@ -151,7 +154,7 @@ endif
 
 #Check if the design name is supported
 check-design:
-	@if [[ ($(DESIGN) != "benchmark") && ($(DESIGN) != "basic") ]]; then\
+	@if [[ ($(DESIGN) != "benchmark") && ($(DESIGN) != "basic") && ($(DESIGN) != "latency") ]]; then\
 		echo "DESIGN=$(DESIGN) is not supported!";\
 		exit 1;\
 	fi

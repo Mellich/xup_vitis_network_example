@@ -47,7 +47,7 @@ NETLAYERDIR = NetLayers/
 CMACDIR     = Ethernet/
 BASICDIR    = Basic_kernels/
 BENCHMARDIR = Benchmark_kernel/
-LATDIR		= LatencyKernels/
+LATDIR		= Latency_kernels/
 
 NETLAYERHLS = 100G-fpga-network-stack-core
 

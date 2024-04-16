@@ -9,6 +9,7 @@ build*/
 *.xclbin
 basic.*/
 benchmark.*/
+latency.*/
 __pycache__/
 *.jstack
 *.out

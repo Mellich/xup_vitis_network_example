@@ -1,6 +1,7 @@
 /*
  * Copyright 2022 Xilinx, Inc.
  *           2023-2024 Gerrit Pape (papeg@mail.upb.de)
+ *           2024 Marius Meyer (marius.meyer@uni-paderborn.de)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,27 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <ap_axi_sdata.h>
+#include <ap_int.h>
 
-#include <hls_stream.h>
+#define PTR_WIDTH 512
+#define PTR_BYTE_WIDTH 64
+#define DEST_WIDTH 5
 
-#include "constants.h"
-
-extern "C" {
-void dump(hls::stream<pkt>& data_input, ap_uint<PTR_WIDTH>* data_output,
-          unsigned int byte_size, unsigned int iterations, bool ack_enable,
-          hls::stream<ack_pkt>& ack_stream) {
-iterations:
-    for (unsigned int n = 0; n < iterations; n++) {
-    read:
-        for (int i = 0; i < (byte_size / PTR_BYTE_WIDTH); i++) {
-#pragma HLS PIPELINE II = 1
-            pkt temp = data_input.read();
-            data_output[i] = temp.data;
-        }
-        if (ack_enable) {
-            ack_pkt ack;
-            ack_stream.write(ack);
-        }
-    }
-}
-}
+typedef ap_axiu<PTR_WIDTH, 1, 1, DEST_WIDTH> pkt;
+typedef ap_axiu<1, 0, 0, 0> ack_pkt;

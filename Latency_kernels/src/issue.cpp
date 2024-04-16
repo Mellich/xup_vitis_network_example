@@ -15,20 +15,15 @@
  * limitations under the License.
  */
 
-#include <ap_axi_sdata.h>
-#include <ap_int.h>
 #include <hls_stream.h>
 
-#define _XF_SYNTHESIS_ 1
-
-#define PTR_WIDTH 512
-#define PTR_BYTE_WIDTH 64
+#include "constants.h"
 
 extern "C" {
-void issue(hls::stream<ap_axiu<PTR_WIDTH, 0, 0, 0>>& data_output,
-           ap_uint<PTR_WIDTH>* data_input, unsigned int byte_size,
-           unsigned int frame_size, unsigned int iterations, bool ack_enable,
-           unsigned int dest, hls::stream<ap_axiu<1, 0, 0, 0>>& ack_stream) {
+void issue(hls::stream<pkt>& data_output, ap_uint<PTR_WIDTH>* data_input,
+           unsigned int byte_size, unsigned int frame_size,
+           unsigned int iterations, bool ack_enable, unsigned int dest,
+           hls::stream<ack_pkt>& ack_stream) {
     const bool framing = frame_size != 0;
     const unsigned int num_frames =
         framing ? (byte_size / PTR_BYTE_WIDTH / frame_size) : 1;
@@ -38,7 +33,7 @@ void issue(hls::stream<ap_axiu<PTR_WIDTH, 0, 0, 0>>& data_output,
         for (int frame = 0; frame < num_frames; frame++) {
             for (int i = 0; i < iterations_per_frame; i++) {
 #pragma HLS PIPELINE II = 1
-                ap_axiu<PTR_WIDTH, 0, 0, 0> temp;
+                pkt temp;
                 temp.data = data_input[frame * iterations_per_frame + i];
                 if (framing) {
                     temp.keep = -1;
@@ -49,7 +44,7 @@ void issue(hls::stream<ap_axiu<PTR_WIDTH, 0, 0, 0>>& data_output,
             }
         }
         if (ack_enable) {
-            ap_axiu<1, 0, 0, 0> ack = ack_stream.read();
+            ack_pkt ack = ack_stream.read();
         }
     }
 }

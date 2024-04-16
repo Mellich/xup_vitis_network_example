@@ -14,6 +14,9 @@ include("${CMAKE_CURRENT_LIST_DIR}/../xrt_host_api/CMakeLists.txt")
 add_executable(test basic_test.cpp)
 target_link_libraries(test PRIVATE vnx Threads::Threads)
 
+add_executable(latency latency_test.cpp)
+target_link_libraries(latency PRIVATE vnx Threads::Threads)
+
 if (MPI_CXX_FOUND)
     add_executable(scale scale_test.cpp)
     target_link_libraries(scale PRIVATE vnx Threads::Threads MPI::MPI_CXX)

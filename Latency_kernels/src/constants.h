@@ -19,8 +19,8 @@
 #include <ap_int.h>
 
 #define PTR_WIDTH 512
-#define PTR_BYTE_WIDTH 64
-#define DEST_WIDTH 5
+#define PTR_BYTE_WIDTH (PTR_WIDTH / 8)
+#define DEST_WIDTH 16
 
 typedef ap_axiu<PTR_WIDTH, 1, 1, DEST_WIDTH> pkt;
 typedef ap_axiu<1, 0, 0, 0> ack_pkt;

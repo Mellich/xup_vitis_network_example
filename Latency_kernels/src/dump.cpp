@@ -20,9 +20,9 @@
 #include "constants.h"
 
 extern "C" {
-void dump(hls::stream<pkt>& data_input, ap_uint<PTR_WIDTH>* data_output,
-          unsigned int byte_size, unsigned int iterations, bool ack_enable,
-          hls::stream<ack_pkt>& ack_stream) {
+void dump(ap_uint<PTR_WIDTH>* data_output, unsigned int byte_size,
+          unsigned int iterations, bool ack_enable,
+          hls::stream<pkt>& data_input, hls::stream<ack_pkt>& ack_stream) {
 iterations:
     for (unsigned int n = 0; n < iterations; n++) {
     read:

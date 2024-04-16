@@ -20,9 +20,9 @@
 #include "constants.h"
 
 extern "C" {
-void issue(hls::stream<pkt>& data_output, ap_uint<PTR_WIDTH>* data_input,
-           unsigned int byte_size, unsigned int frame_size,
-           unsigned int iterations, bool ack_enable, unsigned int dest,
+void issue(ap_uint<PTR_WIDTH>* data_input, unsigned int byte_size,
+           unsigned int frame_size, unsigned int iterations, bool ack_enable,
+           unsigned int dest, hls::stream<pkt>& data_output,
            hls::stream<ack_pkt>& ack_stream) {
     const bool framing = frame_size != 0;
     const unsigned int num_frames =
@@ -36,9 +36,9 @@ void issue(hls::stream<pkt>& data_output, ap_uint<PTR_WIDTH>* data_input,
                 pkt temp;
                 temp.data = data_input[frame * iterations_per_frame + i];
                 if (framing) {
-                    temp.keep = -1;
                     temp.last = (i == (frame_size - 1));
                 }
+                temp.keep = -1;
                 temp.dest = dest;
                 data_output.write(temp);
             }

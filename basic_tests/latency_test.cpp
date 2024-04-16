@@ -102,14 +102,17 @@ unsigned long run_test(std::string bfd, std::string bitstream, int offset,
     bo_in.sync(XCL_BO_SYNC_BO_TO_DEVICE);
     bo_in2.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
+    std::cout << "Start transmission" << std::endl;
+
     xrt::run r = dump1(0, bo_out, data_size, repetitions, 1);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     auto t1 = std::chrono::high_resolution_clock::now();
     xrt::run r3 =
-        issue1(0, bo_in, data_size, std::min<int>(data_size + 63 / 64, 120),
+        issue1(0, bo_in, data_size,
+               std::min<int>(std::max<int>(data_size + 63 / 64, 1), 120),
                repetitions, 1, 0);
     r.wait(std::chrono::milliseconds(timeout_ms));
-    r3.wait();
+    r3.wait(std::chrono::milliseconds(timeout_ms));
     auto t2 = std::chrono::high_resolution_clock::now();
     double ms =
         std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
@@ -120,10 +123,11 @@ unsigned long run_test(std::string bfd, std::string bitstream, int offset,
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     t1 = std::chrono::high_resolution_clock::now();
     xrt::run r4 =
-        issue1(0, bo_in2, data_size, std::min<int>(data_size + 63 / 64, 120),
+        issue2(0, bo_in2, data_size,
+               std::min<int>(std::max<int>(data_size + 63 / 64, 1), 120),
                repetitions, 1, 0);
     r2.wait(std::chrono::milliseconds(timeout_ms));
-    r4.wait();
+    r4.wait(std::chrono::milliseconds(timeout_ms));
     t2 = std::chrono::high_resolution_clock::now();
     double ms2 =
         std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();

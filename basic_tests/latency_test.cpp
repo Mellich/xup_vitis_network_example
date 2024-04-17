@@ -88,10 +88,10 @@ unsigned long run_test(std::string bfd, std::string bitstream, int offset,
     xrt::kernel dump2(dev, uuid, "dump:{dump_0}");
 
     std::cout << "Generate Input data" << std::endl;
-    xrt::bo bo_in(dev, data_size, 0, issue1.group_id(1));
-    xrt::bo bo_in2(dev, data_size, 0, issue2.group_id(1));
-    xrt::bo bo_out(dev, data_size, 0, dump1.group_id(1));
-    xrt::bo bo_out2(dev, data_size, 0, dump2.group_id(1));
+    xrt::bo bo_in(dev, data_size, 0, issue1.group_id(0));
+    xrt::bo bo_in2(dev, data_size, 0, issue2.group_id(0));
+    xrt::bo bo_out(dev, data_size, 0, dump1.group_id(0));
+    xrt::bo bo_out2(dev, data_size, 0, dump2.group_id(0));
 
     srand(0);
     for (int i = 0; i < data_size / sizeof(int); i++) {
@@ -102,39 +102,74 @@ unsigned long run_test(std::string bfd, std::string bitstream, int offset,
     bo_in.sync(XCL_BO_SYNC_BO_TO_DEVICE);
     bo_in2.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
+    std::cout << "NW 1" << std::endl;
+    network_layer.get_udp_in_pkts();
+    network_layer.get_udp_app_in_pkts();
+    network_layer.get_udp_app_out_pkts();
+    network_layer.get_udp_out_pkts();
+    std::cout << "NW 2" << std::endl;
+    network_layer2.get_udp_in_pkts();
+    network_layer2.get_udp_app_in_pkts();
+    network_layer2.get_udp_app_out_pkts();
+    network_layer2.get_udp_out_pkts();
+
     std::cout << "Start transmission" << std::endl;
 
-    xrt::run r = dump1(0, bo_out, data_size, repetitions, 1);
+    xrt::run r = dump1(bo_out, data_size, repetitions, 1);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     auto t1 = std::chrono::high_resolution_clock::now();
     xrt::run r3 =
-        issue1(0, bo_in, data_size,
-               std::min<int>(std::max<int>(data_size + 63 / 64, 1), 120),
-               repetitions, 1, 0);
+        issue1(bo_in, data_size,
+               //    std::min<int>(std::max<int>(data_size + 63 / 64, 1), 120),
+               1, repetitions, 1, 0);
     r.wait(std::chrono::milliseconds(timeout_ms));
     r3.wait(std::chrono::milliseconds(timeout_ms));
     auto t2 = std::chrono::high_resolution_clock::now();
     double ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    std::cout << "0 -> 1: " << ms << "ms, " << (data_size / (ms) * 1.0e-6)
-              << "GB/s" << std::endl;
+        std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+    std::cout << "0 -> 1: " << (ms / repetitions) << "us, "
+              << (data_size * repetitions / (ms) * 1.0e-3) << "GB/s"
+              << std::endl;
 
-    xrt::run r2 = dump2(0, bo_out2, data_size, repetitions, 1);
+    std::cout << "NW 1" << std::endl;
+    network_layer.get_udp_in_pkts();
+    network_layer.get_udp_app_in_pkts();
+    network_layer.get_udp_app_out_pkts();
+    network_layer.get_udp_out_pkts();
+    std::cout << "NW 2" << std::endl;
+    network_layer2.get_udp_in_pkts();
+    network_layer2.get_udp_app_in_pkts();
+    network_layer2.get_udp_app_out_pkts();
+    network_layer2.get_udp_out_pkts();
+
+    xrt::run r2 = dump2(bo_out2, data_size, repetitions, 1);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     t1 = std::chrono::high_resolution_clock::now();
     xrt::run r4 =
-        issue2(0, bo_in2, data_size,
-               std::min<int>(std::max<int>(data_size + 63 / 64, 1), 120),
-               repetitions, 1, 0);
+        issue2(bo_in2, data_size,
+               //    std::min<int>(std::max<int>(data_size + 63 / 64, 1), 120),
+               1, repetitions, 1, 0);
     r2.wait(std::chrono::milliseconds(timeout_ms));
     r4.wait(std::chrono::milliseconds(timeout_ms));
     t2 = std::chrono::high_resolution_clock::now();
     double ms2 =
-        std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    std::cout << "1 -> 0: " << ms2 << "ms, " << (data_size / (ms2) * 1.0e-6)
-              << "GB/s" << std::endl;
+        std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+    std::cout << "1 -> 0: " << (ms2 / repetitions) << "us, "
+              << (data_size * repetitions / (ms2) * 1.0e-3) << "GB/s"
+              << std::endl;
 
-    if (ms > timeout_ms || ms2 > timeout_ms) {
+    std::cout << "NW 1" << std::endl;
+    network_layer.get_udp_in_pkts();
+    network_layer.get_udp_app_in_pkts();
+    network_layer.get_udp_app_out_pkts();
+    network_layer.get_udp_out_pkts();
+    std::cout << "NW 2" << std::endl;
+    network_layer2.get_udp_in_pkts();
+    network_layer2.get_udp_app_in_pkts();
+    network_layer2.get_udp_app_out_pkts();
+    network_layer2.get_udp_out_pkts();
+
+    if (ms > timeout_ms * 1000 || ms2 > timeout_ms * 1000) {
         std::cout << "At least one direction had a timeout. Skip validation"
                   << std::endl;
         return 2;

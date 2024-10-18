@@ -6,7 +6,7 @@
 #SBATCH --mem=64g
 
 module reset
-module load fpga xilinx/xrt/2.16
+module load fpga xilinx/xrt/2.15
 
 export LM_LICENSE_FILE="27000@kiso.uni-paderborn.de"
 

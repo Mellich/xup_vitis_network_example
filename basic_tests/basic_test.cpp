@@ -188,7 +188,7 @@ unsigned long run_test(std::string bfd, std::string bitstream, int offset, long 
 int main(int argc, char **argv)
 {
     if (argc < 4) {
-        std::cerr << "Requires exactly two input arguments: Execute with " << argv[0] << " PATH_TO_BITSTREAM.xclbin DATA_SIZE_BYTES #REPETITIONS"  << std::endl;
+        std::cerr << "Requires exactly three input arguments: Execute with " << argv[0] << " PATH_TO_BITSTREAM.xclbin DATA_SIZE_BYTES #REPETITIONS"  << std::endl;
         return 1;
     }
     std::string bitstream(argv[1]);

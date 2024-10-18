@@ -120,8 +120,8 @@ unsigned long run_test(std::string bfd, std::string bitstream, int offset,
     auto t1 = std::chrono::high_resolution_clock::now();
     xrt::run r3 =
         issue1(bo_in, data_size,
-               //    std::min<int>(std::max<int>(data_size + 63 / 64, 1), 120),
-               1, repetitions, 1, 0);
+               std::min<int>(std::max<int>((data_size + 63) / 64, 1), 64),
+               repetitions, 1, 0);
     r.wait(std::chrono::milliseconds(timeout_ms));
     r3.wait(std::chrono::milliseconds(timeout_ms));
     auto t2 = std::chrono::high_resolution_clock::now();
@@ -147,8 +147,8 @@ unsigned long run_test(std::string bfd, std::string bitstream, int offset,
     t1 = std::chrono::high_resolution_clock::now();
     xrt::run r4 =
         issue2(bo_in2, data_size,
-               //    std::min<int>(std::max<int>(data_size + 63 / 64, 1), 120),
-               1, repetitions, 1, 0);
+               std::min<int>(std::max<int>((data_size + 63) / 64, 1), 64),
+               repetitions, 1, 0);
     r2.wait(std::chrono::milliseconds(timeout_ms));
     r4.wait(std::chrono::milliseconds(timeout_ms));
     t2 = std::chrono::high_resolution_clock::now();

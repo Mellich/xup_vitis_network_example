@@ -26,7 +26,7 @@ void dump(ap_uint<PTR_WIDTH>* data_output, unsigned int byte_size,
 iterations:
     for (unsigned int n = 0; n < iterations; n++) {
     read:
-        for (int i = 0; i < (byte_size / PTR_BYTE_WIDTH); i++) {
+        for (int i = 0; i < ((byte_size + (PTR_BYTE_WIDTH - 1)) / PTR_BYTE_WIDTH); i++) {
 #pragma HLS PIPELINE II = 1
             pkt temp = data_input.read();
             data_output[i] = temp.data;

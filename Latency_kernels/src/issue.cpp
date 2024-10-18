@@ -24,25 +24,17 @@ void issue(ap_uint<PTR_WIDTH>* data_input, unsigned int byte_size,
            unsigned int frame_size, unsigned int iterations, bool ack_enable,
            unsigned int dest, hls::stream<pkt>& data_output,
            hls::stream<ack_pkt>& ack_stream) {
-    const bool framing = frame_size != 0;
-    const unsigned int num_frames =
-        framing ? (byte_size / PTR_BYTE_WIDTH / frame_size) : 1;
-    const unsigned int iterations_per_frame =
-        framing ? frame_size : (byte_size / PTR_BYTE_WIDTH);
+    const unsigned int num_iterations = ((byte_size + (PTR_BYTE_WIDTH - 1)) / PTR_BYTE_WIDTH);
     for (unsigned int n = 0; n < iterations; n++) {
-        for (int frame = 0; frame < num_frames; frame++) {
-            for (int i = 0; i < iterations_per_frame; i++) {
+        for (unsigned int i = 0; i < num_iterations; i++) {
 #pragma HLS PIPELINE II = 1
-                pkt temp;
-                temp.data = data_input[frame * iterations_per_frame + i];
-                if (framing) {
-                    temp.last = (i == (frame_size - 1));
-                }
-                temp.keep = -1;
-                temp.dest = dest;
-                data_output.write(temp);
-            }
-        }
+            pkt temp;
+            temp.data = data_input[i];
+            temp.last = (i % frame_size == (frame_size - 1) || (i  == (num_iterations - 1)));
+            temp.keep = -1;
+            temp.dest = dest;
+            data_output.write(temp);
+       }
         if (ack_enable) {
             ack_pkt ack = ack_stream.read();
         }
